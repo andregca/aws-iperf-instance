@@ -1,0 +1,8 @@
+# Global configuration consumed by deploy.sh
+keypair_name: aws_linux          # Logical name shared across regions
+key_dir: "~/.ssh"                # Where PEM & fingerprint files are stored
+regions:                         # Default deployment regions
+  - us-east-1
+  - sa-east-1
+# Optional extra Terraform CLI flags (e.g. "-var-file=prod.tfvars")
+tf_extra_flags: ""

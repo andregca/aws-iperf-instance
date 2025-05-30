@@ -1,0 +1,5 @@
+infra-*
+.terraform*
+.DS_Store
+logs/*
+.plugin-cache/*
