@@ -1,4 +1,4 @@
-# Multi‑Region AWS EC2 Deployment with Automatic Key Pair Management
+# Multi‑Region AWS EC2 Linux Deployment, with iPerf and Automatic Key Pair Management
 
 ![Terraform](https://img.shields.io/badge/Terraform-1.8+-5C4EE5?logo=terraform&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-EC2-orange?logo=amazon-aws&logoColor=white)
@@ -22,7 +22,7 @@
 
 ## Overview
 
-This project provides a robust, idempotent way to deploy EC2 resources across multiple AWS regions using Terraform. It automatically manages EC2 key pairs on a per-region basis, generating new keys as needed and storing private keys and fingerprints locally. 
+This project provides a idempotent way to deploy EC2 AWS Linux resources, with iPerf, across multiple AWS regions using Terraform. It automatically manages EC2 key pairs on a per-region basis, generating new keys as needed and storing private keys and fingerprints locally. 
 
 ## Features
 
