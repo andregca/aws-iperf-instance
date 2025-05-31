@@ -1,24 +1,8 @@
 # Multi‑Region AWS EC2 Linux Deployment, with iPerf and Automatic Key Pair Management
 
-![Terraform](https://img.shields.io/badge/Terraform-1.8+-5C4EE5?logo=terraform&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-1.12+-5C4EE5?logo=terraform&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-EC2-orange?logo=amazon-aws&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Directory Structure](#directory-structure)
-- [Key Pair Management](#key-pair-management)
-- [Cleaning Up](#cleaning-up)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
-- [Author](#author)
-
----
 
 ## Overview
 
@@ -38,10 +22,10 @@ This project provides a idempotent way to deploy EC2 AWS Linux resources, with i
 
 | Tool         | Version    | Install (macOS)                             |
 |--------------|------------|---------------------------------------------|
-| Terraform    | 1.8+       | `brew install hashicorp/tap/terraform`      |
-| AWS CLI v2   | 2.16+      | `brew install awscli`                       |
+| Terraform    | 1.12+      | `brew install hashicorp/tap/terraform`      |
+| AWS CLI v2   | 2.27+      | `brew install awscli`                       |
 | jq           | 1.7+       | `brew install jq`                           |
-| yq           | 4.x        | `brew install yq`                           |
+| yq           | 4.45+      | `brew install yq`                           |
 
 > **Note:**  
 > Ensure your AWS CLI is configured for SSO or your preferred authentication.  
@@ -52,6 +36,7 @@ This project provides a idempotent way to deploy EC2 AWS Linux resources, with i
 > ```
 >
 > Your AWS_PROFILE is defined when you use the command "aws configured". You can also check $HOME/.aws/config
+> For more information, review the [AWS CLI Getting Started Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
 
 ---
 
@@ -108,6 +93,7 @@ You can also specify regions directly:
   - Fingerprint: keys/<region>-<keypair>.fingerprint
 - On subsequent runs, only verification occurs (no overwrite).
 - If the key exists on AWS, but you don't have a .pem locally, you need to delete the key on AWS and re-create it, or define a new name on config.yaml
+- It generates a ssh_config file in the script directory to facilitate ssh access to the linux instances
 
 ## Cleaning Up
 
@@ -134,7 +120,7 @@ You can also remove all files under logs, ssh_config file and infra-* directorie
 This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Author
-Andre Gustavo Albuquerque
+Andre Gustavo Albuquerque  
 [GitHub](https://github.com/andregca)
 
 > Feel free to fork, submit issues, or open pull requests!
