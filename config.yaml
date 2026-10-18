@@ -2,6 +2,9 @@
 # aws_profile: my-sso-profile    # Optional; AWS_PROFILE env var takes precedence
 keypair_name: aws_linux          # Logical name shared across regions
 key_dir: "~/.ssh"                # Where PEM & fingerprint files are stored
+# CIDRs you test from (REQUIRED for create). All ports/protocols are allowed inbound from them.
+test_cidrs:
+  - 189.60.73.18/32               # auto-detected (update-test-cidr.sh)
 regions:                         # Default deployment regions
   #- ap-northeast-1               # Tokio, JP
   - us-east-1                   # N. Virginia, US

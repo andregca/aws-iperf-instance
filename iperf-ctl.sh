@@ -49,6 +49,8 @@ echo "👤  AWS profile: ${AWS_PROFILE:-<default credential chain>}"
 
 cfg_regions=($(yq -r '.regions[]' "${CFG_FILE}"))
 extra_tf_flags=$(yq -r '.tf_extra_flags' "${CFG_FILE}")
+# CIDRs allowed inbound (all ports/protocols) from the user's test locations, as a JSON list
+test_cidrs_json=$(yq -o=json -I=0 '.test_cidrs // []' "${CFG_FILE}")
 
 #──────────────────────── cli parsing ────────────────────────────────────────
 [ $# -ge 1 ] || die "Usage: $0 <create|destroy|output> [regions…]"
@@ -57,6 +59,14 @@ case "${action}" in create|destroy|output) ;; *) die "Action must be create, des
 regions=("${@:-${cfg_regions[@]}}")
 [ ${#regions[@]} -ge 1 ] || die "No regions provided via CLI or config.yaml"
 action_upper=$(upper "${action}")
+
+#──────────────────────── inbound source validation ──────────────────────────
+if [ "${action}" = "create" ]; then
+  [ "${test_cidrs_json}" != "[]" ] || die "test_cidrs must be specified in ${CFG_FILE}: list the CIDRs you test from (e.g. your public IP as x.x.x.x/32). Without it nothing can reach the instances."
+  grep -q '^cato_pop_cidrs' "${BASE_DIR}/terraform.tfvars" || die "cato_pop_cidrs missing from terraform.tfvars. Run ./update-cato-pop-cidrs.sh"
+fi
+# destroy does not need real sources, but Terraform still validates the variable
+[ "${test_cidrs_json}" != "[]" ] || test_cidrs_json='["127.0.0.1/32"]'
 
 #──────────────────────── aws authentication check ───────────────────────────
 # create/destroy call AWS; fail early (e.g. expired SSO token) instead of mid-run.
@@ -231,12 +241,14 @@ for region in "${regions[@]}"; do
         exit "$rc"
       fi
       terraform apply -auto-approve -var="aws_region=${region}" \
-        -var="key_name=${keypair_name}" ${extra_tf_flags} \
+        -var="key_name=${keypair_name}" \
+        -var="test_cidrs=${test_cidrs_json}" ${extra_tf_flags} \
         | tee -a "${logfile}" | progress_filter
       ;;
     destroy)
       terraform destroy -auto-approve -var="aws_region=${region}" \
-        -var="key_name=${keypair_name}" ${extra_tf_flags} \
+        -var="key_name=${keypair_name}" \
+        -var="test_cidrs=${test_cidrs_json}" ${extra_tf_flags} \
         | tee -a "${logfile}" | progress_filter
       ;;
     output)

@@ -51,8 +51,22 @@ key_dir: "~/.ssh"                  # Directory to store PEM and public key files
 regions:
   - us-east-1
   - eu-central-1
+test_cidrs:                        # REQUIRED: CIDRs you test from (all ports/protocols allowed inbound)
+  - 203.0.113.10/32
 tf_extra_flags: ""                 # Optional extra Terraform CLI flags
 ```
+
+## Inbound access
+
+Outbound traffic is unrestricted. Inbound traffic (all ports and protocols) is allowed only from:
+
+- **Cato POPs** – `cato_pop_cidrs` in `terraform.tfvars`, applied through one or more security groups of up to 60 rules each (AWS default quota; up to 4 groups, as the default limit is 5 groups per network interface). Refresh the list from the Cato feed with:
+  ```bash
+  ./update-cato-pop-cidrs.sh
+  ```
+- **Your test locations** – `test_cidrs` in `config.yaml`. This is required; `create` stops with an error if it is empty. `./update-test-cidr.sh` detects your current public IP and sets it for you (it first checks that you are not connected to Cato, since you would otherwise get a Cato POP address, and pauses until you disconnect) (it only manages the entry tagged `# auto-detected`); run `./iperf-ctl.sh create` afterwards to apply it.
+
+SSH is therefore reachable only from those sources.
 
 ## Usage
 
@@ -80,6 +94,8 @@ You can also specify regions directly:
 ```
 .
 ├── config.yaml           # Configuration (regions, keypair, directories)
+├── update-cato-pop-cidrs.sh # Refreshes cato_pop_cidrs in terraform.tfvars
+├── update-test-cidr.sh      # Sets your public IP in config.yaml test_cidrs
 ├── iperf-ctl.sh             # Multi-region automation script
 ├── main.tf               # Terraform root module (uses var.key_name)
 ├── variables.tf          # All variables (including key_name)

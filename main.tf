@@ -17,7 +17,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region  = var.aws_region
   profile = var.profile
 }
 
@@ -81,49 +81,69 @@ resource "aws_route_table_association" "public" {
 }
 
 #########################
-# Security Group
+# Security Groups
 #########################
-resource "aws_security_group" "host" {
-  name        = "${var.instance_name_prefix}-sg"
-  description = "Allow ICMP + iperf3 inbound; all outbound"
+# Inbound is controlled by SGs attached to the same ENI:
+#   - cato_pop SG(s): all ports/protocols from Cato POP CIDRs (var.cato_pop_cidrs).
+#     Split into chunks of 60 rules (default AWS quota per SG).
+#   - test SG: all ports/protocols from the user's test CIDRs (var.test_cidrs),
+#     plus allow-all outbound.
+# AWS default quota is 5 SGs per ENI, so at most 4 Cato POP chunks (240 CIDRs).
+locals {
+  sg_rules_per_group = 60
+  cato_pop_chunks    = chunklist(var.cato_pop_cidrs, local.sg_rules_per_group)
+  cato_pop_rules = merge([
+    for i, chunk in local.cato_pop_chunks : {
+      for cidr in chunk : "${i}-${cidr}" => { group = i, cidr = cidr }
+    }
+  ]...)
+}
+
+resource "aws_security_group" "cato_pop" {
+  count       = length(local.cato_pop_chunks)
+  name        = "${var.instance_name_prefix}-cato-pop-sg-${count.index + 1}"
+  description = "Allow all inbound from Cato POPs (${count.index + 1}/${length(local.cato_pop_chunks)})"
   vpc_id      = aws_vpc.this.id
 
-  ingress {
-    protocol    = "tcp"
-    from_port   = 22
-    to_port     = 22
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  tags = { Name = "${var.instance_name_prefix}-cato-pop-sg-${count.index + 1}" }
 
-  ingress {
-    protocol    = "icmp"
-    from_port   = -1
-    to_port     = -1
-    cidr_blocks = ["0.0.0.0/0"]
+  lifecycle {
+    precondition {
+      condition     = length(local.cato_pop_chunks) <= 4
+      error_message = "cato_pop_cidrs needs ${length(local.cato_pop_chunks)} security groups, but only 4 fit on one ENI with the default quota of 5 SGs per ENI (the 5th is the test SG)."
+    }
   }
+}
 
-  ingress {
-    protocol    = "udp"
-    from_port   = 5200
-    to_port     = 5201
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "cato_pop" {
+  for_each          = local.cato_pop_rules
+  security_group_id = aws_security_group.cato_pop[each.value.group].id
+  ip_protocol       = "-1"
+  cidr_ipv4         = each.value.cidr
+  description       = "Cato POP"
+}
 
-  ingress {
-    protocol    = "tcp"
-    from_port   = 5200
-    to_port     = 5201
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group" "test" {
+  name        = "${var.instance_name_prefix}-test-sg"
+  description = "Allow all inbound from user test CIDRs; all outbound"
+  vpc_id      = aws_vpc.this.id
 
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  tags = { Name = "${var.instance_name_prefix}-test-sg" }
+}
 
-  tags = { Name = "${var.instance_name_prefix}-sg" }
+resource "aws_vpc_security_group_ingress_rule" "test" {
+  for_each          = toset(var.test_cidrs)
+  security_group_id = aws_security_group.test.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = each.value
+  description       = "Test source"
+}
+
+resource "aws_vpc_security_group_egress_rule" "all" {
+  security_group_id = aws_security_group.test.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+  description       = "Allow all outbound"
 }
 
 #########################
@@ -133,7 +153,7 @@ resource "aws_instance" "host" {
   ami                         = data.aws_ami.al2023.id
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public.id
-  vpc_security_group_ids      = [aws_security_group.host.id]
+  vpc_security_group_ids      = concat(aws_security_group.cato_pop[*].id, [aws_security_group.test.id])
   key_name                    = var.key_name
   associate_public_ip_address = true
   user_data                   = file(var.user_data_path)
@@ -144,5 +164,5 @@ resource "aws_instance" "host" {
 #########################
 # Outputs
 #########################
-output "instance_public_ip"  { value = aws_instance.host.public_ip  }
+output "instance_public_ip" { value = aws_instance.host.public_ip }
 output "instance_public_dns" { value = aws_instance.host.public_dns }
