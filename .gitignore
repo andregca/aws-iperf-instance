@@ -3,3 +3,4 @@ infra-*
 .DS_Store
 logs/*
 .plugin-cache/*
+ssh_config

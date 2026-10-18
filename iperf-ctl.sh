@@ -147,7 +147,8 @@ ensure_keypair() {
 
 write_ssh_config() {
   local regions=("$@")
-  local config_file="ssh_config"
+  local config_file="${BASE_DIR}/ssh_config"
+  local hosts=0
   : > "$config_file"  # Truncate or create
   # write common options
     cat >> "$config_file" <<EOF
@@ -173,8 +174,14 @@ Host ${region}
     IdentityFile $pem_file
 
 EOF
+    hosts=$((hosts + 1))
   done
-  echo "📝  Wrote SSH config file: $config_file"
+  if [ "$hosts" -eq 0 ]; then
+    rm -f "$config_file"
+    echo "🗑  No running instances left; removed SSH config file"
+  else
+    echo "📝  Wrote SSH config file: $config_file"
+  fi
 }
 
 #──────────────────────── main loop ──────────────────────────────────────────
@@ -204,13 +211,13 @@ for region in "${regions[@]}"; do
   echo "🔸  ${action_upper} in ${region}"
   case "${action}" in
     create)
-      ensure_keypair "${region}"
-      rc=$?
+      rc=0
+      ensure_keypair "${region}" || rc=$?
       if [ $rc -ne 0 ]; then
         # error with key generation
         echo "❌  Error with key processing for for $region." 
         echo "    Destroy what has been created, delete the key from AWS and re-run the script"
-        exit
+        exit "$rc"
       fi
       terraform apply -auto-approve -var="aws_region=${region}" \
         -var="key_name=${keypair_name}" ${extra_tf_flags} \
@@ -238,6 +245,20 @@ if [ "$action" = "create" ]; then
   echo "________________________"
   echo "🔑  Example SSH commands:"
   for region in "${regions[@]}"; do
-    echo "  ssh -F ./ssh_config $region"
+    echo "  ssh -F ${BASE_DIR}/ssh_config $region"
   done
+fi
+
+if [ "$action" = "destroy" ]; then
+  # Rebuild from regions that still have instances; removes the file when none remain
+  remaining=()
+  for d in "${BASE_DIR}"/infra-*/; do
+    [ -d "$d" ] || continue
+    d="${d%/}"; remaining+=("${d##*/infra-}")
+  done
+  if [ ${#remaining[@]} -gt 0 ]; then
+    write_ssh_config "${remaining[@]}"
+  else
+    rm -f "${BASE_DIR}/ssh_config"
+  fi
 fi

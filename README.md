@@ -35,7 +35,7 @@ This project provides a idempotent way to deploy EC2 AWS Linux resources, with i
 > export AWS_PROFILE=<your-sso-profile>
 > ```
 >
-> Your AWS_PROFILE is defined when you use the command "aws configured". You can also check $HOME/.aws/config
+> Your profile name is defined by `aws configure sso` (see `$HOME/.aws/config`). Alternatively, set `aws_profile` in `config.yaml`; the `AWS_PROFILE` environment variable takes precedence. The same profile is used by the AWS CLI and Terraform.
 > For more information, review the [AWS CLI Getting Started Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
 
 ---
@@ -45,12 +45,14 @@ This project provides a idempotent way to deploy EC2 AWS Linux resources, with i
 Edit `config.yaml` to declare your regions and key pair name:
 
 ```yaml
+# aws_profile: my-sso-profile      # Optional; AWS_PROFILE env var takes precedence
 keypair_name: mycompany-key        # Logical name (can be anything, per project)
-key_dir: keys                      # Directory to store PEM and fingerprint
+key_dir: "~/.ssh"                  # Directory to store PEM and public key files
 regions:
   - us-east-1
   - eu-central-1
 tf_extra_flags: ""                 # Optional extra Terraform CLI flags
+```
 
 ## Usage
 
@@ -89,11 +91,11 @@ You can also specify regions directly:
 ## Key Pair Management
 - For each region, iperf-ctl.sh checks for an existing EC2 key pair.
 - If missing, it creates a new ED25519 key pair via AWS CLI and stores:
-  - PEM: keys/<region>-<keypair>.pem
-  - Fingerprint: keys/<region>-<keypair>.fingerprint
+  - PEM: <key_dir>/<region>-<keypair>.pem
+  - Public key: <key_dir>/<region>-<keypair>.pub
 - On subsequent runs, only verification occurs (no overwrite).
 - If the key exists on AWS, but you don't have a .pem locally, you need to delete the key on AWS and re-create it, or define a new name on config.yaml
-- It generates a ssh_config file in the script directory to facilitate ssh access to the linux instances
+- It generates an `ssh_config` file in the script directory to facilitate ssh access (`ssh -F ./ssh_config <region>`). `destroy` regenerates it for the remaining regions and deletes it when none are left.
 
 ## Cleaning Up
 
@@ -103,7 +105,7 @@ To destroy all resources:
 ./iperf-ctl.sh destroy
 ```
 
-You can also remove all files under logs, ssh_config file and infra-* directories.
+You can also remove all files under logs and the infra-* directories.
 
 ## Troubleshooting
 * SSO Expired?
