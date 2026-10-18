@@ -38,9 +38,13 @@ command -v python3 >/dev/null || die "python3 is required"
 # True (0) when the Cato DNS answers, i.e. the Cato client is connected.
 cato_connected() {
   if command -v dig >/dev/null; then
-    [ -n "$(dig +short +time=2 +tries=1 "@${CATO_DNS_IP}" example.com A 2>/dev/null)" ]
+    # A timeout makes dig exit non-zero and print an error line, so require a
+    # successful exit AND at least one IPv4 answer.
+    local out
+    out=$(dig +short +time=2 +tries=1 "@${CATO_DNS_IP}" example.com A 2>/dev/null) || return 1
+    printf '%s\n' "${out}" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
   elif command -v nslookup >/dev/null; then
-    nslookup -timeout=2 -retry=1 example.com "${CATO_DNS_IP}" >/dev/null 2>&1
+    nslookup -timeout=2 -retry=1 example.com - "${CATO_DNS_IP}" >/dev/null 2>&1
   else
     echo "⚠️   Neither dig nor nslookup found; skipping the Cato connection check" >&2
     return 1
