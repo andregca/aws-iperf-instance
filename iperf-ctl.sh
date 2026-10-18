@@ -58,6 +58,17 @@ regions=("${@:-${cfg_regions[@]}}")
 [ ${#regions[@]} -ge 1 ] || die "No regions provided via CLI or config.yaml"
 action_upper=$(upper "${action}")
 
+#──────────────────────── aws authentication check ───────────────────────────
+# create/destroy call AWS; fail early (e.g. expired SSO token) instead of mid-run.
+# `output` only reads local Terraform state, so it skips the check.
+if [ "${action}" != "output" ]; then
+  if aws_account=$(aws sts get-caller-identity --query Account --output text 2>/dev/null); then
+    echo "🔐  AWS authenticated (account ${aws_account})"
+  else
+    die "AWS not authenticated or session expired for profile '${AWS_PROFILE:-default}'. Run: aws sso login${AWS_PROFILE:+ --profile ${AWS_PROFILE}}"
+  fi
+fi
+
 #──────────────────────── constants ──────────────────────────────────────────
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="${BASE_DIR}/logs"; mkdir -p "${LOG_DIR}"

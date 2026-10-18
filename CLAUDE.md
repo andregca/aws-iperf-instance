@@ -27,7 +27,7 @@ Deploys one Amazon Linux 2023 EC2 instance running an `iperf3` server in each AW
 
 AWS profile: `AWS_PROFILE` env wins, else optional `aws_profile` in `config.yaml`; `iperf-ctl.sh` exports it so the AWS CLI and Terraform use the same one (`var.profile` defaults to null).
 
-Requires `terraform`, `aws` CLI v2, `jq`, `yq` (mikefarah v4), `rsync`. Run `aws sso login` first.
+Requires `terraform`, `aws` CLI v2, `jq`, `yq` (mikefarah v4), `rsync`. Run `aws sso login` first; `create`/`destroy` verify this with `aws sts get-caller-identity` and exit early if not authenticated (`output` skips the check).
 
 ## Adding or changing things
 
