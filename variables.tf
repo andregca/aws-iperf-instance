@@ -7,8 +7,9 @@ variable "aws_region" {
 }
 
 variable "profile" {
-  description = "AWS CLI SSO Profile"
+  description = "AWS CLI profile; null uses AWS_PROFILE / default credential chain (iperf-ctl.sh exports AWS_PROFILE)"
   type        = string
+  default     = null
 }
 
 variable "key_name" {

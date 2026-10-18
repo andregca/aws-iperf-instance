@@ -56,29 +56,29 @@ tf_extra_flags: ""                 # Optional extra Terraform CLI flags
 
 1. Deploy Infrastructure
 ```bash
-./deploy.sh create      # Deploys to all regions in config.yaml
+./iperf-ctl.sh create      # Deploys to all regions in config.yaml
 ```
 
 2. Show Outputs
 ```bash
-./deploy.sh output      # Shows outputs for all configured regions
+./iperf-ctl.sh output      # Shows outputs for all configured regions
 ```
 
 3. Destroy Infrastructure
 ```bash
-./deploy.sh destroy     # Destroys resources in all regions
+./iperf-ctl.sh destroy     # Destroys resources in all regions
 ```
 
 You can also specify regions directly:
 ```bash
-./deploy.sh create us-east-1 eu-west-1
+./iperf-ctl.sh create us-east-1 eu-west-1
 ```
 
 ## Directory Structure
 ```
 .
 ├── config.yaml           # Configuration (regions, keypair, directories)
-├── deploy.sh             # Multi-region automation script
+├── iperf-ctl.sh             # Multi-region automation script
 ├── main.tf               # Terraform root module (uses var.key_name)
 ├── variables.tf          # All variables (including key_name)
 ├── README.md             # Project documentation
@@ -87,7 +87,7 @@ You can also specify regions directly:
 ```
 
 ## Key Pair Management
-- For each region, deploy.sh checks for an existing EC2 key pair.
+- For each region, iperf-ctl.sh checks for an existing EC2 key pair.
 - If missing, it creates a new ED25519 key pair via AWS CLI and stores:
   - PEM: keys/<region>-<keypair>.pem
   - Fingerprint: keys/<region>-<keypair>.fingerprint
@@ -100,7 +100,7 @@ You can also specify regions directly:
 To destroy all resources:
 
 ```bash
-./deploy.sh destroy
+./iperf-ctl.sh destroy
 ```
 
 You can also remove all files under logs, ssh_config file and infra-* directories.

@@ -1,8 +1,11 @@
-# Global configuration consumed by deploy.sh
+# Global configuration consumed by iperf-ctl.sh
+# aws_profile: my-sso-profile    # Optional; AWS_PROFILE env var takes precedence
 keypair_name: aws_linux          # Logical name shared across regions
 key_dir: "~/.ssh"                # Where PEM & fingerprint files are stored
 regions:                         # Default deployment regions
-  - us-east-1
-  - sa-east-1
+  #- ap-northeast-1               # Tokio, JP
+  - us-east-1                   # N. Virginia, US
+  #- sa-east-1                    # Sao Paulo, BR
+  - us-west-2                     # Portland, OR, US
 # Optional extra Terraform CLI flags (e.g. "-var-file=prod.tfvars")
 tf_extra_flags: ""

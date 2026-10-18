@@ -2,7 +2,6 @@
 # Adjust the values as needed.
 # ---------------------------------------------------
 aws_region          = "us-east-1"
-profile             = "default"
 vpc_name             = "iperf-vpc"
 instance_name_prefix = "linux-iperf"
 instance_type        = "t2.micro"

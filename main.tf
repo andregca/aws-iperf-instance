@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Provision one VPC + public subnet + IGW + Security Group + Amazon Linux 2023
 # instance in **the region supplied via -var="aws_region=<region>"**.
-# Works standalone or via deploy.sh.
+# Works standalone or via iperf-ctl.sh.
 # ============================================================================
 
 terraform {
@@ -104,14 +104,14 @@ resource "aws_security_group" "host" {
 
   ingress {
     protocol    = "udp"
-    from_port   = 5201
+    from_port   = 5200
     to_port     = 5201
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     protocol    = "tcp"
-    from_port   = 5201
+    from_port   = 5200
     to_port     = 5201
     cidr_blocks = ["0.0.0.0/0"]
   }

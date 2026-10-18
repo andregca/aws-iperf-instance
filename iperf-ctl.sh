@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 ###############################################################################
-# deploy.sh – Terraform multi‑region driver (macOS /bin/bash 3.2 compatible)
+# iperf-ctl.sh – Terraform multi‑region driver (macOS /bin/bash 3.2 compatible)
 #
 # USAGE
-#   ./deploy.sh create              # uses regions from config.yaml
-#   ./deploy.sh destroy eu-west-1   # overrides regions
-#   ./deploy.sh output              # show outputs only
+#   ./iperf-ctl.sh create              # uses regions from config.yaml
+#   ./iperf-ctl.sh destroy eu-west-1   # overrides regions
+#   ./iperf-ctl.sh output              # show outputs only
 #
 # ENV
 #   CONFIG_FILE    – alternate YAML config (default ./config.yaml)
-#   AWS_PROFILE    – SSO / IAM profile (run `aws sso login` first!)
+#   AWS_PROFILE    – SSO / IAM profile (run `aws sso login` first!); overrides
+#                    aws_profile in config.yaml. Used by both AWS CLI and Terraform.
 #   TF_LOG         – usual Terraform debug flags (optional)
 ###############################################################################
 set -euo pipefail
@@ -37,6 +38,14 @@ eval key_dir="$key_dir"
 if [ ! -d "$key_dir" ]; then
     mkdir -p "$key_dir"
 fi
+
+# AWS profile: AWS_PROFILE env wins, then aws_profile in config.yaml. Exported so the
+# AWS CLI and Terraform's AWS provider both use the same profile.
+cfg_profile=$(yq -r '.aws_profile // ""' "${CFG_FILE}")
+if [ -z "${AWS_PROFILE:-}" ] && [ -n "${cfg_profile}" ]; then
+  export AWS_PROFILE="${cfg_profile}"
+fi
+echo "👤  AWS profile: ${AWS_PROFILE:-<default credential chain>}"
 
 cfg_regions=($(yq -r '.regions[]' "${CFG_FILE}"))
 extra_tf_flags=$(yq -r '.tf_extra_flags' "${CFG_FILE}")
